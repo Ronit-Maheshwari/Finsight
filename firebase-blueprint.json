@@ -1,0 +1,64 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Stores user preferences and basic profile information.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "preferences": {
+          "type": "object",
+          "properties": {
+            "currency": { "type": "string", "description": "Preferred currency (e.g., PKR, USD)" }
+          }
+        }
+      },
+      "required": ["uid", "email"]
+    },
+    "PortfolioItem": {
+      "title": "Portfolio Item",
+      "description": "A single asset held by a user in their portfolio.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "symbol": { "type": "string", "description": "Ticker symbol (e.g., AAPL, BTCUSD)" },
+        "assetType": { "type": "string", "enum": ["stock", "mutual_fund", "commodity", "forex", "crypto"] },
+        "quantity": { "type": "number" },
+        "averagePrice": { "type": "number" },
+        "purchaseDate": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "symbol", "quantity", "averagePrice"]
+    },
+    "WatchlistItem": {
+      "title": "Watchlist Item",
+      "description": "An asset a user is tracking.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "symbol": { "type": "string" },
+        "assetType": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "symbol"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User account documents"
+    },
+    "/users/{userId}/portfolio/{itemId}": {
+      "schema": "PortfolioItem",
+      "description": "User's investment holdings"
+    },
+    "/users/{userId}/watchlist/{watchlistId}": {
+      "schema": "WatchlistItem",
+      "description": "User's tracked assets"
+    }
+  }
+}

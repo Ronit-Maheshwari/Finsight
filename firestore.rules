@@ -1,0 +1,73 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // User Profile Rules
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) 
+        && incoming().uid == userId
+        && incoming().email == request.auth.token.email
+        && incoming().keys().hasAll(['uid', 'email', 'createdAt'])
+        && incoming().createdAt == request.time;
+      allow update: if isOwner(userId)
+        && incoming().uid == userId
+        && incoming().email == existing().email
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'preferences']);
+    }
+
+    // Portfolio Rules
+    match /users/{userId}/portfolio/{itemId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && incoming().userId == userId
+        && incoming().keys().hasAll(['userId', 'symbol', 'assetType', 'quantity', 'averagePrice', 'updatedAt'])
+        && incoming().updatedAt == request.time
+        && incoming().quantity >= 0
+        && incoming().averagePrice >= 0;
+      allow update: if isOwner(userId)
+        && incoming().userId == userId
+        && incoming().symbol == existing().symbol
+        && incoming().diff(existing()).affectedKeys().hasAny(['quantity', 'averagePrice', 'updatedAt'])
+        && incoming().updatedAt == request.time;
+      allow delete: if isOwner(userId);
+    }
+
+    // Watchlist Rules
+    match /users/{userId}/watchlist/{watchlistId} {
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && incoming().userId == userId
+        && incoming().keys().hasAll(['userId', 'symbol', 'assetType', 'createdAt'])
+        && incoming().createdAt == request.time;
+      allow delete: if isOwner(userId);
+    }
+  }
+}
